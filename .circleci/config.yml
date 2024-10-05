@@ -1,0 +1,120 @@
+version: 2.1
+
+jobs:
+  deploy:
+    docker:
+      - image: cimg/base:2024.10
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run:
+          name: Pull Docker Image
+          command: docker pull ghcr.io/scrkiddie/moodleattendo:latest
+
+      - run:
+          name: Run Docker Container
+          command: |
+            current_day=$(TZ="Asia/Jakarta" date +%u)
+            current_hour=$(TZ="Asia/Jakarta" date +%H)
+            
+            echo "hari dalam zona waktu WIB (1 = senin, 7 = minggu): $current_day"
+            echo "jam dalam zona waktu WIB: $current_hour"
+            
+            # menentukan argumen berdasarkan hari dan jam
+            if [ "$current_day" -eq 1 ] && [ "$current_hour" -eq 8 ]; then
+              args=1221  # senin
+            elif [ "$current_day" -eq 2 ]; then
+              if [ "$current_hour" -eq 9 ]; then
+                args=1212  # selasa, jam 09
+              elif [ "$current_hour" -eq 13 ]; then
+                args=1209  # selasa, jam 13
+              fi
+            elif [ "$current_day" -eq 3 ]; then
+              if [ "$current_hour" -eq 9 ]; then
+                args=1218  # rabu, jam 09
+              elif [ "$current_hour" -eq 13 ]; then
+                args=1224  # rabu, jam 13
+              fi
+            elif [ "$current_day" -eq 4 ]; then
+              if [ "$current_hour" -eq 8 ]; then
+                args=1206  # kamis, jam 08
+              elif [ "$current_hour" -eq 13 ]; then
+                args=1215  # kamis, jam 13
+              fi
+            fi
+
+            # menjalankan docker run jika args telah ditentukan
+            if [ -n "$args" ]; then
+              docker run \
+                -e HOSTNAME=$HOSTNAME \
+                -e USERNAME=$USERNAME \
+                -e PASSWORD=$PASSWORD \
+                -e TGCHAT=$TGCHAT \
+                -e TGBOT=$TGBOT \
+                ghcr.io/scrkiddie/moodleattendo:latest $args
+            else
+              docker run \
+                -e HOSTNAME=$HOSTNAME \
+                -e USERNAME=$USERNAME \
+                -e PASSWORD=$PASSWORD \
+                -e TGCHAT=$TGCHAT \
+                -e TGBOT=$TGBOT \
+                ghcr.io/scrkiddie/moodleattendo:latest testing
+            fi
+
+workflows:
+  version: 2
+  deploy_docker:
+    triggers:
+      - schedule:
+          cron: "40 1 * * 1"   # senin, pukul 08:40 wib (utc+7)
+          filters:
+            branches:
+              only:
+                - main
+      - schedule:
+          cron: "30 2 * * 2"   # selasa, pukul 09:30 wib (utc+7)
+          filters:
+            branches:
+              only:
+                - main
+      - schedule:
+          cron: "10 6 * * 2"   # selasa, pukul 13:10 wib (utc+7)
+          filters:
+            branches:
+              only:
+                - main
+      - schedule:
+          cron: "30 2 * * 3"   # rabu, pukul 09:30 wib (utc+7)
+          filters:
+            branches:
+              only:
+                - main
+      - schedule:
+          cron: "30 6 * * 3"   # rabu, pukul 13:30 wib (utc+7)
+          filters:
+            branches:
+              only:
+                - main
+      - schedule:
+          cron: "40 1 * * 4"   # kamis, pukul 08:40 wib (utc+7)
+          filters:
+            branches:
+              only:
+                - main
+      - schedule:
+          cron: "10 6 * * 4"   # kamis, pukul 13:10 wib (utc+7)
+          filters:
+            branches:
+              only:
+                - main
+    jobs:
+      - deploy
+
+  build-and-deploy:
+    jobs:
+      - deploy:
+          filters:
+            branches:
+              only: main
