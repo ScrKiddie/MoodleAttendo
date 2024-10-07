@@ -1,9 +1,11 @@
-package third
+package thirdimport
 
 import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"io/ioutil"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -12,7 +14,6 @@ import (
 
 func PresenceProcessFourth(ctx context.Context, client http.Client, payloadPart map[string]string, session string, hostname string) error {
 	alert := true
-
 	payload := url.Values{}
 	payload.Set("sessid", payloadPart["sessid"])
 	payload.Add("sesskey", payloadPart["sesskey"])
@@ -35,7 +36,6 @@ func PresenceProcessFourth(ctx context.Context, client http.Client, payloadPart 
 				time.Sleep(1 * time.Second)
 				continue
 			}
-
 			req.Header.Add("Host", hostname)
 			req.Header.Add("Cookie", "MoodleSession="+session)
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
@@ -51,6 +51,17 @@ func PresenceProcessFourth(ctx context.Context, client http.Client, payloadPart 
 				continue
 			}
 			defer resp.Body.Close()
+
+		
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				slog.Error("gagal membaca body response: " + err.Error())
+				return err
+			}
+
+	
+			fmt.Println("Status Code:", resp.StatusCode)
+			fmt.Println("Response Body:", string(body))
 
 			return nil
 		}
