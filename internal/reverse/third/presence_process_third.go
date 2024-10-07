@@ -51,7 +51,7 @@ func PresenceProcessThird(ctx context.Context, client http.Client, link string, 
 			}
 
 			status := doc.Find("span.statusdesc").First().Text()
-
+                        slog.Warn(status)
 			if status == "" {
 				slog.Warn("pilihan pada presensi tidak ditemukan sehingga presensi dianggap sukses")
 				return nil, nil
