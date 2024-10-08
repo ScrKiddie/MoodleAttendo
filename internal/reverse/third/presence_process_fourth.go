@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -55,15 +53,6 @@ func PresenceProcessFourth(ctx context.Context, client http.Client, payloadPart 
 				continue
 			}
 			defer resp.Body.Close()
-
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				slog.Error("gagal membaca body response: " + err.Error())
-				return err
-			}
-
-			fmt.Println("Status Code:", resp.StatusCode)
-			fmt.Println("Response Body:", string(body))
 
 			return nil
 		}

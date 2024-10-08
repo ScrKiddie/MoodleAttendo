@@ -73,7 +73,7 @@ func App(ctx context.Context, client http.Client, courseId string, account model
 		}
 	}
 
-	var payloadPart *map[string]string
+	payloadPart := new(map[string]string)
 	if formLink != "" {
 		payloadPart, err = third.PresenceProcessThird(ctx, client, formLink, realCookies)
 		if err != nil {
@@ -82,7 +82,6 @@ func App(ctx context.Context, client http.Client, courseId string, account model
 		if payloadPart == nil {
 			currentTime := time.Now().In(time.FixedZone("WIB", 7*60*60))
 			message := fmt.Sprintf("[%s] berhasil melakukan presensi pada %s", currentTime.Format("2006-01-02 15:04:05"), link)
-
 			screenshot, err := chromium.TakeScreenshot(ctx, realCookies, link, account.Hostname)
 			if err != nil {
 				slog.Warn("gagal melakukan screenshot, pastikan chromium sudah terinstall dengan benar: " + err.Error())
@@ -97,7 +96,6 @@ func App(ctx context.Context, client http.Client, courseId string, account model
 	}
 
 	if payloadPart != nil {
-
 		if err := third.PresenceProcessFourth(ctx, client, *payloadPart, realCookies, account.Hostname); err != nil {
 			currentTime := time.Now().In(time.FixedZone("WIB", 7*60*60))
 			message := fmt.Sprintf("[%s] %s", currentTime.Format("2006-01-02 15:04:05"), err.Error())

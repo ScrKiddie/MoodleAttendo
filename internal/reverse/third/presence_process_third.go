@@ -50,8 +50,10 @@ func PresenceProcessThird(ctx context.Context, client http.Client, link string, 
 				continue
 			}
 
-			status := doc.Find("span.statusdesc").First().Text()
-                        slog.Warn(status)
+			firstElement := doc.Find("label.form-check-inline").First()
+			input := firstElement.Find("input[type='radio']")
+			status, exists := input.Attr("value")
+
 			if status == "" {
 				slog.Warn("pilihan pada presensi tidak ditemukan sehingga presensi dianggap sukses")
 				return nil, nil
