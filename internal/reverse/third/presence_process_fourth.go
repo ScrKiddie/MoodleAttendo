@@ -13,21 +13,20 @@ import (
 func PresenceProcessFourth(ctx context.Context, client http.Client, payloadPart map[string]string, session string, hostname string) error {
 	alert := true
 
+	payload := url.Values{}
+	payload.Set("sessid", payloadPart["sessid"])
+	payload.Add("sesskey", payloadPart["sesskey"])
+	payload.Add("sesskey", payloadPart["sesskey"])
+	payload.Set("_qf__mod_attendance_form_studentattendance", "1")
+	payload.Set("mform_isexpanded_id_session", "1")
+	payload.Set("status", payloadPart["status"])
+	payload.Set("submitbutton", "Save changes")
+
 	for {
 		select {
 		case <-ctx.Done():
 			return errors.New("program dihentikan karena server tidak menanggapi request")
 		default:
-			payload := url.Values{}
-
-			payload.Set("sessid", payloadPart["sessid"])
-			payload.Add("sesskey", payloadPart["sesskey"])
-			payload.Add("sesskey", payloadPart["sesskey"])
-			payload.Set("_qf__mod_attendance_form_studentattendance", "1")
-			payload.Set("mform_isexpanded_id_session", "1")
-			payload.Set("status", payloadPart["status"])
-			payload.Set("submitbutton", "Save changes")
-
 			req, err := http.NewRequest("POST", "https://"+hostname+"/mod/attendance/attendance.php", bytes.NewBufferString(payload.Encode()))
 			if err != nil {
 				if alert {

@@ -34,11 +34,12 @@ func App(ctx context.Context, client http.Client, courseId string, account model
 		if err != nil {
 			slog.Info(message)
 			slog.Warn("gagal melakukan screenshot dengan chromium: " + err.Error())
-		}
-		err = telegram.SendDocument(ctx, client, account.BotToken, account.ChatId, screenshot, fmt.Sprintf("%s.png", time.Now().Format("2006-01-02_15-04-05")), "")
-		if err != nil {
-			slog.Info(message)
-			slog.Warn(err.Error())
+		} else {
+			err = telegram.SendDocument(ctx, client, account.BotToken, account.ChatId, screenshot, fmt.Sprintf("%s.png", time.Now().Format("2006-01-02_15-04-05")), "")
+			if err != nil {
+				slog.Info(message)
+				slog.Warn(err.Error())
+			}
 		}
 		err2 := telegram.SendMessage(ctx, client, account.BotToken, account.ChatId, message)
 		if err2 != nil {

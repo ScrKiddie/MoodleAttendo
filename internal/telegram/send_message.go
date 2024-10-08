@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"mime/multipart"
 	"net/http"
@@ -37,7 +36,7 @@ func SendMessage(ctx context.Context, client http.Client, token, chat, message s
 
 			defer resp.Body.Close()
 			if resp.StatusCode != http.StatusOK {
-				return fmt.Errorf("response %s dari telegram pastikan chat id dan bot token sudah benar", resp.Status)
+				return fmt.Errorf("response %s dari telegram: bot token atau chat id tidak valid", resp.Status)
 			}
 			return nil
 		}
@@ -47,31 +46,30 @@ func SendMessage(ctx context.Context, client http.Client, token, chat, message s
 func SendDocument(ctx context.Context, client http.Client, token, chat string, document []byte, filename string, caption string) error {
 	alert := true
 
+	body := new(bytes.Buffer)
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("document", filename)
+	if err != nil {
+		return fmt.Errorf("gagal membuat form file: %v", err)
+	}
+	if _, err := part.Write(document); err != nil {
+		return fmt.Errorf("gagal menulis dokumen: %v", err)
+	}
+	if err := writer.WriteField("chat_id", chat); err != nil {
+		return fmt.Errorf("gagal menulis chat_id: %v", err)
+	}
+	if err := writer.WriteField("caption", caption); err != nil {
+		return fmt.Errorf("gagal menulis caption: %v", err)
+	}
+	if err := writer.Close(); err != nil {
+		return fmt.Errorf("gagal menutup writer: %v", err)
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
 			return errors.New("request ke telegram dihentikan karena server tidak menanggapi")
 		default:
-			body := new(bytes.Buffer)
-			writer := multipart.NewWriter(body)
-
-			part, err := writer.CreateFormFile("document", filename)
-			if err != nil {
-				return fmt.Errorf("gagal membuat form file: %v", err)
-			}
-			if _, err := part.Write(document); err != nil {
-				return fmt.Errorf("gagal menulis dokumen: %v", err)
-			}
-			if err := writer.WriteField("chat_id", chat); err != nil {
-				return fmt.Errorf("gagal menulis chat_id: %v", err)
-			}
-			if err := writer.WriteField("caption", caption); err != nil {
-				return fmt.Errorf("gagal menulis caption: %v", err)
-			}
-			if err := writer.Close(); err != nil {
-				return fmt.Errorf("gagal menutup writer: %v", err)
-			}
-
 			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("https://api.telegram.org/bot%s/sendDocument", token), body)
 			if err != nil {
 				if alert {
@@ -94,11 +92,8 @@ func SendDocument(ctx context.Context, client http.Client, token, chat string, d
 				continue
 			}
 
-			bodyBytes, _ := io.ReadAll(resp.Body)
-			resp.Body.Close()
-
 			if resp.StatusCode != http.StatusOK {
-				return fmt.Errorf("response %s dari telegram: %s", resp.Status, string(bodyBytes))
+				return fmt.Errorf("response %s dari telegram: bot token atau chat id tidak valid", resp.Status)
 			}
 
 			return nil
