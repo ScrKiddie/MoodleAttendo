@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
-	"moodle_attendo/internal/chromium"
 	"moodle_attendo/internal/model"
 	"moodle_attendo/internal/reverse/first"
 	"moodle_attendo/internal/reverse/second"
 	"moodle_attendo/internal/reverse/third"
-	"moodle_attendo/internal/telegram"
+	"moodle_attendo/internal/util"
 	"net/http"
 	"time"
 )
@@ -30,18 +29,18 @@ func App(ctx context.Context, client http.Client, courseId string, account model
 	if courseId == "testing" {
 		currentTime := time.Now().In(time.FixedZone("WIB", 7*60*60))
 		message := fmt.Sprintf("[%s] %s", currentTime.Format("2006-01-02 15:04:05"), "berhasil terhubung dengan telegram")
-		screenshot, err := chromium.TakeScreenshot(ctx, realCookies, "https://jollycontrarian.com/images/6/6c/Rickroll.jpg", account.Hostname)
+		screenshot, err := util.TakeScreenshot(ctx, realCookies, "https://"+account.Hostname+"/user/profile.php", account.Hostname)
 		if err != nil {
 			slog.Info(message)
-			slog.Warn("gagal melakukan screenshot dengan chromium: " + err.Error())
+			slog.Warn("gagal melakukan screenshot: " + err.Error())
 		} else {
-			err = telegram.SendDocument(ctx, client, account.BotToken, account.ChatId, screenshot, fmt.Sprintf("%s.png", time.Now().Format("2006-01-02_15-04-05")), "")
+			err = util.SendDocument(ctx, client, account.BotToken, account.ChatId, screenshot, fmt.Sprintf("%s.png", time.Now().Format("2006-01-02_15-04-05")), "")
 			if err != nil {
 				slog.Info(message)
 				slog.Warn(err.Error())
 			}
 		}
-		err2 := telegram.SendMessage(ctx, client, account.BotToken, account.ChatId, message)
+		err2 := util.SendMessage(ctx, client, account.BotToken, account.ChatId, message)
 		if err2 != nil {
 			slog.Info(message)
 			slog.Warn(err2.Error())
@@ -53,7 +52,7 @@ func App(ctx context.Context, client http.Client, courseId string, account model
 	if err != nil {
 		currentTime := time.Now().In(time.FixedZone("WIB", 7*60*60))
 		message := fmt.Sprintf("[%s] %s", currentTime.Format("2006-01-02 15:04:05"), err.Error())
-		err2 := telegram.SendMessage(ctx, client, account.BotToken, account.ChatId, message)
+		err2 := util.SendMessage(ctx, client, account.BotToken, account.ChatId, message)
 		if err2 != nil {
 			slog.Warn(err2.Error())
 		}
@@ -66,7 +65,7 @@ func App(ctx context.Context, client http.Client, courseId string, account model
 		if err != nil {
 			currentTime := time.Now().In(time.FixedZone("WIB", 7*60*60))
 			message := fmt.Sprintf("[%s] %s", currentTime.Format("2006-01-02 15:04:05"), err.Error())
-			err2 := telegram.SendMessage(ctx, client, account.BotToken, account.ChatId, message)
+			err2 := util.SendMessage(ctx, client, account.BotToken, account.ChatId, message)
 			if err2 != nil {
 				slog.Warn(err2.Error())
 			}
@@ -83,12 +82,16 @@ func App(ctx context.Context, client http.Client, courseId string, account model
 		if payloadPart == nil {
 			currentTime := time.Now().In(time.FixedZone("WIB", 7*60*60))
 			message := fmt.Sprintf("[%s] berhasil melakukan presensi pada %s", currentTime.Format("2006-01-02 15:04:05"), link)
-			screenshot, err := chromium.TakeScreenshot(ctx, realCookies, link, account.Hostname)
+			err := util.CloseSidebar(ctx, client, realCookies, account.Hostname)
 			if err != nil {
-				slog.Warn("gagal melakukan screenshot, pastikan chromium sudah terinstall dengan benar: " + err.Error())
+				slog.Warn(err.Error())
+			}
+			screenshot, err := util.TakeScreenshot(ctx, realCookies, link, account.Hostname)
+			if err != nil {
+				slog.Warn("gagal melakukan screenshot: " + err.Error())
 				return
 			}
-			err = telegram.SendDocument(ctx, client, account.BotToken, account.ChatId, screenshot, fmt.Sprintf("%s.png", time.Now().Format("2006-01-02_15-04-05")), message)
+			err = util.SendDocument(ctx, client, account.BotToken, account.ChatId, screenshot, fmt.Sprintf("%s.png", time.Now().Format("2006-01-02_15-04-05")), message)
 			if err != nil {
 				slog.Warn(err.Error())
 				return
@@ -100,7 +103,7 @@ func App(ctx context.Context, client http.Client, courseId string, account model
 		if err := third.PresenceProcessFourth(ctx, client, *payloadPart, realCookies, account.Hostname); err != nil {
 			currentTime := time.Now().In(time.FixedZone("WIB", 7*60*60))
 			message := fmt.Sprintf("[%s] %s", currentTime.Format("2006-01-02 15:04:05"), err.Error())
-			err2 := telegram.SendMessage(ctx, client, account.BotToken, account.ChatId, message)
+			err2 := util.SendMessage(ctx, client, account.BotToken, account.ChatId, message)
 			if err2 != nil {
 				slog.Warn(err2.Error())
 			}
@@ -108,14 +111,17 @@ func App(ctx context.Context, client http.Client, courseId string, account model
 		} else {
 			currentTime := time.Now().In(time.FixedZone("WIB", 7*60*60))
 			message := fmt.Sprintf("[%s] berhasil melakukan presensi pada %s", currentTime.Format("2006-01-02 15:04:05"), link)
-
-			screenshot, err := chromium.TakeScreenshot(ctx, realCookies, link, account.Hostname)
+			err := util.CloseSidebar(ctx, client, realCookies, account.Hostname)
+			if err != nil {
+				slog.Warn(err.Error())
+			}
+			screenshot, err := util.TakeScreenshot(ctx, realCookies, link, account.Hostname)
 			if err != nil {
 				slog.Info(message)
-				slog.Warn("gagal melakukan screenshot, pastikan chromium sudah terinstall dengan benar: " + err.Error())
+				slog.Warn("gagal melakukan screenshot: " + err.Error())
 				return
 			}
-			err = telegram.SendDocument(ctx, client, account.BotToken, account.ChatId, screenshot, fmt.Sprintf("%s.png", time.Now().Format("2006-01-02_15-04-05")), message)
+			err = util.SendDocument(ctx, client, account.BotToken, account.ChatId, screenshot, fmt.Sprintf("%s.png", time.Now().Format("2006-01-02_15-04-05")), message)
 			if err != nil {
 				slog.Info(message)
 				slog.Warn(err.Error())

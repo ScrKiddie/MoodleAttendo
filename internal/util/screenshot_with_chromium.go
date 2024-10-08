@@ -1,4 +1,4 @@
-package chromium
+package util
 
 import (
 	"context"
@@ -16,7 +16,7 @@ func TakeScreenshot(ctx context.Context, session string, link string, hostname s
 		chromedp.Flag("headless", true),
 		chromedp.Flag("disable-gpu", true),
 		chromedp.Flag("no-sandbox", true),
-		chromedp.Flag("window-size", "2560,1440"),
+		chromedp.Flag("window-size", "1980,1080"),
 	)
 
 	allocCtx, cancel := chromedp.NewExecAllocator(ctx, opts...)
