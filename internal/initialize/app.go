@@ -31,18 +31,15 @@ func App(ctx context.Context, client http.Client, courseId string, account model
 		message := fmt.Sprintf("[%s] %s", currentTime.Format("2006-01-02 15:04:05"), "berhasil terhubung dengan telegram")
 		screenshot, err := util.TakeScreenshot(ctx, realCookies, "https://"+account.Hostname+"/user/profile.php", account.Hostname)
 		if err != nil {
-			slog.Info(message)
 			slog.Warn("gagal melakukan screenshot: " + err.Error())
 		} else {
 			err = util.SendDocument(ctx, client, account.BotToken, account.ChatId, screenshot, fmt.Sprintf("%s.png", time.Now().Format("2006-01-02_15-04-05")), "")
 			if err != nil {
-				slog.Info(message)
 				slog.Warn(err.Error())
 			}
 		}
 		err2 := util.SendMessage(ctx, client, account.BotToken, account.ChatId, message)
 		if err2 != nil {
-			slog.Info(message)
 			slog.Warn(err2.Error())
 		}
 		slog.Info(message)
@@ -95,15 +92,16 @@ func App(ctx context.Context, client http.Client, courseId string, account model
 			}
 			screenshot, err := util.TakeScreenshot(ctx, realCookies, link, account.Hostname)
 			if err != nil {
-				slog.Info(message)
 				slog.Warn("gagal melakukan screenshot: " + err.Error())
-				return
-			}
-			err = util.SendDocument(ctx, client, account.BotToken, account.ChatId, screenshot, fmt.Sprintf("%s.png", time.Now().Format("2006-01-02_15-04-05")), message)
-			if err != nil {
-				slog.Info(message)
-				slog.Warn(err.Error())
-				return
+				err2 := util.SendMessage(ctx, client, account.BotToken, account.ChatId, message)
+				if err2 != nil {
+					slog.Warn(err2.Error())
+				}
+			} else {
+				err = util.SendDocument(ctx, client, account.BotToken, account.ChatId, screenshot, fmt.Sprintf("%s.png", time.Now().Format("2006-01-02_15-04-05")), message)
+				if err != nil {
+					slog.Warn(err.Error())
+				}
 			}
 			slog.Info(message)
 			return
@@ -127,15 +125,16 @@ func App(ctx context.Context, client http.Client, courseId string, account model
 		}
 		screenshot, err := util.TakeScreenshot(ctx, realCookies, link, account.Hostname)
 		if err != nil {
-			slog.Info(message)
 			slog.Warn("gagal melakukan screenshot: " + err.Error())
-			return
-		}
-		err = util.SendDocument(ctx, client, account.BotToken, account.ChatId, screenshot, fmt.Sprintf("%s.png", time.Now().Format("2006-01-02_15-04-05")), message)
-		if err != nil {
-			slog.Info(message)
-			slog.Warn(err.Error())
-			return
+			err2 := util.SendMessage(ctx, client, account.BotToken, account.ChatId, message)
+			if err2 != nil {
+				slog.Warn(err2.Error())
+			}
+		} else {
+			err = util.SendDocument(ctx, client, account.BotToken, account.ChatId, screenshot, fmt.Sprintf("%s.png", time.Now().Format("2006-01-02_15-04-05")), message)
+			if err != nil {
+				slog.Warn(err.Error())
+			}
 		}
 		slog.Info(message)
 		return
