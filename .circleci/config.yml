@@ -37,8 +37,8 @@ jobs:
                 args=1224  # rabu, jam 13
               fi
             elif [ "$current_day" -eq 4 ]; then
-              if [ "$current_hour" -eq 8 ]; then
-                args=1206  # kamis, jam 08
+              if [ "$current_hour" -eq 9 ]; then
+                args=1206  # kamis, jam 09
               elif [ "$current_hour" -eq 13 ]; then
                 args=1215  # kamis, jam 13
               fi
@@ -98,7 +98,7 @@ workflows:
               only:
                 - main
       - schedule:
-          cron: "40 1 * * 4"   # kamis, pukul 08:40 wib (utc+7)
+          cron: "0 2 * * 4"   # kamis, pukul 08:40 wib (utc+7)
           filters:
             branches:
               only:
