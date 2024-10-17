@@ -36,15 +36,18 @@ jobs:
               elif [ "$current_hour" -eq 13 ]; then
                 args=1224  # rabu, jam 13
               fi
+            
             elif [ "$current_day" -eq 4 ]; then
-              if [ "$current_hour" -eq 8 ]; then
+              if [ "$current_hour" -eq 7 ]; then
+                args=1206  # kamis, jam 07
+              elif [ "$current_hour" -eq 8 ]; then
                 args=1206  # kamis, jam 08
+              elif [ "$current_hour" -eq 9 ]; then
+                args=1206  # kamis, jam 09
               elif [ "$current_hour" -eq 13 ]; then
                 args=1215  # kamis, jam 13
               fi
             fi
-
-            # menjalankan docker run jika args telah ditentukan
             if [ -n "$args" ]; then
               docker run \
                 -e HOSTNAME=$HOSTNAME \
@@ -98,7 +101,19 @@ workflows:
               only:
                 - main
       - schedule:
+          cron: "0 0 * * 4"   # kamis, pukul 07:00 wib (utc+7)
+          filters:
+            branches:
+              only:
+                - main
+      - schedule:
           cron: "40 1 * * 4"   # kamis, pukul 08:40 wib (utc+7)
+          filters:
+            branches:
+              only:
+                - main
+      - schedule:
+          cron: "0 2 * * 4"   # kamis, pukul 09:00 wib (utc+7)
           filters:
             branches:
               only:
