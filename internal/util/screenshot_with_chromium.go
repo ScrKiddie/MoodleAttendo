@@ -5,7 +5,6 @@ import (
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
-	"log/slog"
 	"time"
 )
 
@@ -22,7 +21,7 @@ func TakeScreenshot(ctx context.Context, session string, link string, hostname s
 	allocCtx, cancel := chromedp.NewExecAllocator(ctx, opts...)
 	defer cancel()
 
-	ctx, cancel = chromedp.NewContext(allocCtx, chromedp.WithLogf(slog.Info))
+	ctx, cancel = chromedp.NewContext(allocCtx, chromedp.WithLogf(func(string, ...interface{}) {}))
 	defer cancel()
 
 	for {
@@ -37,7 +36,7 @@ func TakeScreenshot(ctx context.Context, session string, link string, hostname s
 			),
 			chromedp.Navigate(link),
 			chromedp.WaitVisible("body", chromedp.ByQuery),
-			chromedp.Screenshot("body", &buf, chromedp.NodeVisible, chromedp.ByQuery),
+			chromedp.FullScreenshot(&buf, 100),
 		)
 
 		if err == nil {
