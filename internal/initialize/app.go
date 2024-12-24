@@ -32,15 +32,21 @@ func App(ctx context.Context, client http.Client, courseId string, account model
 		screenshot, err := util.TakeScreenshot(ctx, realCookies, "https://"+account.Hostname+"/user/profile.php", account.Hostname)
 		if err != nil {
 			slog.Warn("gagal melakukan screenshot: " + err.Error())
-		} else {
-			err = util.SendDocument(ctx, client, account.BotToken, account.ChatId, screenshot, fmt.Sprintf("%s.png", time.Now().Format("2006-01-02_15-04-05")), "")
+			html, err := util.ExportHtml(ctx, client, "https://"+account.Hostname+"/user/profile.php", realCookies)
 			if err != nil {
+				slog.Warn("gagal export html: " + err.Error())
+			} else {
+				if err = util.SendDocument(ctx, client, account.BotToken, account.ChatId, html, fmt.Sprintf("%s.html", time.Now().Format("2006-01-02_15-04-05")), ""); err != nil {
+					slog.Warn(err.Error())
+				}
+			}
+		} else {
+			if err = util.SendDocument(ctx, client, account.BotToken, account.ChatId, screenshot, fmt.Sprintf("%s.png", time.Now().Format("2006-01-02_15-04-05")), ""); err != nil {
 				slog.Warn(err.Error())
 			}
 		}
-		err2 := util.SendMessage(ctx, client, account.BotToken, account.ChatId, message)
-		if err2 != nil {
-			slog.Warn(err2.Error())
+		if err = util.SendMessage(ctx, client, account.BotToken, account.ChatId, message); err != nil {
+			slog.Warn(err.Error())
 		}
 		slog.Info(message)
 		return
@@ -50,9 +56,8 @@ func App(ctx context.Context, client http.Client, courseId string, account model
 	if err != nil {
 		currentTime := time.Now().In(time.FixedZone("WIB", 7*60*60))
 		message := fmt.Sprintf("[%s] %s", currentTime.Format("2006-01-02 15:04:05"), err.Error())
-		err2 := util.SendMessage(ctx, client, account.BotToken, account.ChatId, message)
-		if err2 != nil {
-			slog.Warn(err2.Error())
+		if err := util.SendMessage(ctx, client, account.BotToken, account.ChatId, message); err != nil {
+			slog.Warn(err.Error())
 		}
 		log.Fatal(message)
 	}
@@ -63,9 +68,8 @@ func App(ctx context.Context, client http.Client, courseId string, account model
 		if err != nil {
 			currentTime := time.Now().In(time.FixedZone("WIB", 7*60*60))
 			message := fmt.Sprintf("[%s] %s", currentTime.Format("2006-01-02 15:04:05"), err.Error())
-			err2 := util.SendMessage(ctx, client, account.BotToken, account.ChatId, message)
-			if err2 != nil {
-				slog.Warn(err2.Error())
+			if err := util.SendMessage(ctx, client, account.BotToken, account.ChatId, message); err != nil {
+				slog.Warn(err.Error())
 			}
 			log.Fatal(message)
 		}
@@ -77,29 +81,33 @@ func App(ctx context.Context, client http.Client, courseId string, account model
 		if err != nil {
 			currentTime := time.Now().In(time.FixedZone("WIB", 7*60*60))
 			message := fmt.Sprintf("[%s] %s", currentTime.Format("2006-01-02 15:04:05"), err.Error())
-			err2 := util.SendMessage(ctx, client, account.BotToken, account.ChatId, message)
-			if err2 != nil {
-				slog.Warn(err2.Error())
+			if err := util.SendMessage(ctx, client, account.BotToken, account.ChatId, message); err != nil {
+				slog.Warn(err.Error())
 			}
 			log.Fatal(message)
 		}
 		if payloadPart == nil {
 			currentTime := time.Now().In(time.FixedZone("WIB", 7*60*60))
 			message := fmt.Sprintf("[%s] berhasil melakukan presensi pada %s", currentTime.Format("2006-01-02 15:04:05"), link)
-			err := util.CloseSidebar(ctx, client, realCookies, account.Hostname)
-			if err != nil {
+			if err := util.CloseSidebar(ctx, client, realCookies, account.Hostname); err != nil {
 				slog.Warn(err.Error())
 			}
 			screenshot, err := util.TakeScreenshot(ctx, realCookies, link, account.Hostname)
 			if err != nil {
 				slog.Warn("gagal melakukan screenshot: " + err.Error())
-				err2 := util.SendMessage(ctx, client, account.BotToken, account.ChatId, message)
-				if err2 != nil {
-					slog.Warn(err2.Error())
+				html, err := util.ExportHtml(ctx, client, link, realCookies)
+				if err != nil {
+					slog.Warn("gagal export html: " + err.Error())
+					if err := util.SendMessage(ctx, client, account.BotToken, account.ChatId, message); err != nil {
+						slog.Warn(err.Error())
+					}
+				} else {
+					if err := util.SendDocument(ctx, client, account.BotToken, account.ChatId, html, fmt.Sprintf("%s.html", time.Now().Format("2006-01-02_15-04-05")), message); err != nil {
+						slog.Warn(err.Error())
+					}
 				}
 			} else {
-				err = util.SendDocument(ctx, client, account.BotToken, account.ChatId, screenshot, fmt.Sprintf("%s.png", time.Now().Format("2006-01-02_15-04-05")), message)
-				if err != nil {
+				if err := util.SendDocument(ctx, client, account.BotToken, account.ChatId, screenshot, fmt.Sprintf("%s.png", time.Now().Format("2006-01-02_15-04-05")), message); err != nil {
 					slog.Warn(err.Error())
 				}
 			}
@@ -111,28 +119,32 @@ func App(ctx context.Context, client http.Client, courseId string, account model
 	if err := third.PresenceProcessFourth(ctx, client, *payloadPart, realCookies, account.Hostname); err != nil {
 		currentTime := time.Now().In(time.FixedZone("WIB", 7*60*60))
 		message := fmt.Sprintf("[%s] %s", currentTime.Format("2006-01-02 15:04:05"), err.Error())
-		err2 := util.SendMessage(ctx, client, account.BotToken, account.ChatId, message)
-		if err2 != nil {
-			slog.Warn(err2.Error())
+		if err := util.SendMessage(ctx, client, account.BotToken, account.ChatId, message); err != nil {
+			slog.Warn(err.Error())
 		}
 		log.Fatal(message)
 	} else {
 		currentTime := time.Now().In(time.FixedZone("WIB", 7*60*60))
 		message := fmt.Sprintf("[%s] berhasil melakukan presensi pada %s", currentTime.Format("2006-01-02 15:04:05"), link)
-		err := util.CloseSidebar(ctx, client, realCookies, account.Hostname)
-		if err != nil {
+		if err := util.CloseSidebar(ctx, client, realCookies, account.Hostname); err != nil {
 			slog.Warn(err.Error())
 		}
 		screenshot, err := util.TakeScreenshot(ctx, realCookies, link, account.Hostname)
 		if err != nil {
 			slog.Warn("gagal melakukan screenshot: " + err.Error())
-			err2 := util.SendMessage(ctx, client, account.BotToken, account.ChatId, message)
-			if err2 != nil {
-				slog.Warn(err2.Error())
+			html, err := util.ExportHtml(ctx, client, link, realCookies)
+			if err != nil {
+				slog.Warn("gagal export html: " + err.Error())
+				if err := util.SendMessage(ctx, client, account.BotToken, account.ChatId, message); err != nil {
+					slog.Warn(err.Error())
+				}
+			} else {
+				if err := util.SendDocument(ctx, client, account.BotToken, account.ChatId, html, fmt.Sprintf("%s.html", time.Now().Format("2006-01-02_15-04-05")), message); err != nil {
+					slog.Warn(err.Error())
+				}
 			}
 		} else {
-			err = util.SendDocument(ctx, client, account.BotToken, account.ChatId, screenshot, fmt.Sprintf("%s.png", time.Now().Format("2006-01-02_15-04-05")), message)
-			if err != nil {
+			if err := util.SendDocument(ctx, client, account.BotToken, account.ChatId, screenshot, fmt.Sprintf("%s.png", time.Now().Format("2006-01-02_15-04-05")), message); err != nil {
 				slog.Warn(err.Error())
 			}
 		}
