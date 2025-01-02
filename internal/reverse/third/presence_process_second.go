@@ -6,23 +6,47 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"log/slog"
 	"net/http"
+	"strings"
+	"sync"
 	"time"
 )
 
-func PresenceProsesSecond(ctx context.Context, client http.Client, link string, session string, hostname string) (string, error) {
-	alert := true
+func PresenceProsesSecond(ctx context.Context, client http.Client, allUrl []string, session string, hostname string) (string, string, error) {
+	once := new(sync.Once)
+	var urlResult, urlBenar string
+	wg := new(sync.WaitGroup)
 
+	innerCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	for _, url := range allUrl {
+		wg.Add(1)
+		go asyncGetAttendUrl(ctx, innerCtx, session, client, url, hostname, once, &urlResult, wg, &urlBenar, cancel)
+	}
+
+	wg.Wait()
+
+	if urlBenar != "" && urlResult != "" {
+		return urlBenar, urlResult, nil
+	}
+	str := strings.Join(allUrl, "\n")
+	return "", "", errors.New("belum ada presensi di link berikut: \n" + str)
+}
+
+func asyncGetAttendUrl(ctx context.Context, innerCtx context.Context, session string, client http.Client, url string, hostname string, once *sync.Once, urlResult *string, wg *sync.WaitGroup, urlBenar *string, cancel context.CancelFunc) {
+	defer wg.Done()
 	for {
 		select {
 		case <-ctx.Done():
-			return "", errors.New("program dihentikan karena server tidak menanggapi request")
+			return
+		case <-innerCtx.Done():
+			return
 		default:
-			req, err := http.NewRequest("GET", link, nil)
+			req, err := http.NewRequest("GET", url, nil)
 			if err != nil {
-				if alert {
+				once.Do(func() {
 					slog.Error("masalah jaringan: " + err.Error())
-					alert = false
-				}
+				})
 				time.Sleep(1 * time.Second)
 				continue
 			}
@@ -30,10 +54,9 @@ func PresenceProsesSecond(ctx context.Context, client http.Client, link string, 
 			req.Header.Set("Cookie", "MoodleSession="+session)
 			resp, err := client.Do(req)
 			if err != nil {
-				if alert {
+				once.Do(func() {
 					slog.Error("masalah jaringan: " + err.Error())
-					alert = false
-				}
+				})
 				time.Sleep(1 * time.Second)
 				continue
 			}
@@ -41,19 +64,23 @@ func PresenceProsesSecond(ctx context.Context, client http.Client, link string, 
 
 			doc, err := goquery.NewDocumentFromReader(resp.Body)
 			if err != nil {
-				if alert {
+				once.Do(func() {
 					slog.Error("masalah jaringan: " + err.Error())
-					alert = false
-				}
+				})
 				time.Sleep(1 * time.Second)
 				continue
 			}
 
-			url, exists := doc.Find("a[href*='https://" + hostname + "/mod/attendance/attendance.php']").Attr("href")
-			if !exists {
-				return "", errors.New("belum ada presensi di course " + link)
+			link, exists := doc.Find("a[href*='https://" + hostname + "/mod/attendance/attendance.php']").Attr("href")
+			if exists {
+				once.Do(func() {
+					*urlResult = link
+					*urlBenar = url
+					cancel()
+				})
+				return
 			}
-			return url, nil
+			return
 		}
 	}
 }

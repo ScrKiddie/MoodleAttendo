@@ -10,13 +10,13 @@ import (
 	"time"
 )
 
-func PresenceProcessFirst(ctx context.Context, client http.Client, idCourse string, session string, hostname string) (string, error) {
+func PresenceProcessFirst(ctx context.Context, client http.Client, idCourse string, session string, hostname string) ([]string, error) {
 	alert := true
 
 	for {
 		select {
 		case <-ctx.Done():
-			return "", errors.New("program dihentikan karena server tidak menanggapi request")
+			return []string{}, errors.New("program dihentikan karena server tidak menanggapi request")
 		default:
 			url := fmt.Sprintf("https://"+hostname+"/course/view.php?id=%s", idCourse)
 			req, err := http.NewRequest("GET", url, nil)
@@ -51,17 +51,16 @@ func PresenceProcessFirst(ctx context.Context, client http.Client, idCourse stri
 				time.Sleep(1 * time.Second)
 				continue
 			}
-			var lastURL string
-
+			var allUrl []string
 			doc.Find("a[href*='https://" + hostname + "/mod/attendance/view.php']").Each(func(i int, s *goquery.Selection) {
 				href, _ := s.Attr("href")
-				lastURL = href
+				allUrl = append(allUrl, href)
 			})
 
-			if lastURL == "" {
-				return "", errors.New("link presensi pada " + url + " tidak ditemukan")
+			if len(allUrl) == 0 {
+				return []string{}, errors.New("link presensi pada " + url + " tidak ditemukan")
 			}
-			return lastURL, nil
+			return allUrl, nil
 		}
 	}
 }

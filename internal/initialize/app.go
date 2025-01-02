@@ -52,7 +52,7 @@ func App(ctx context.Context, client http.Client, courseId string, account model
 		return
 	}
 
-	link, err := third.PresenceProcessFirst(ctx, client, courseId, realCookies, account.Hostname)
+	arrLink, err := third.PresenceProcessFirst(ctx, client, courseId, realCookies, account.Hostname)
 	if err != nil {
 		currentTime := time.Now().In(time.FixedZone("WIB", 7*60*60))
 		message := fmt.Sprintf("[%s] %s", currentTime.Format("2006-01-02 15:04:05"), err.Error())
@@ -63,8 +63,9 @@ func App(ctx context.Context, client http.Client, courseId string, account model
 	}
 
 	var formLink string
-	if link != "" {
-		formLink, err = third.PresenceProsesSecond(ctx, client, link, realCookies, account.Hostname)
+	var link string
+	if len(arrLink) > 0 {
+		link, formLink, err = third.PresenceProsesSecond(ctx, client, arrLink, realCookies, account.Hostname)
 		if err != nil {
 			currentTime := time.Now().In(time.FixedZone("WIB", 7*60*60))
 			message := fmt.Sprintf("[%s] %s", currentTime.Format("2006-01-02 15:04:05"), err.Error())
